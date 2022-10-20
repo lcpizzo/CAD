@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
+
 
 #define LIM_NOTAS 10
 #define N_METRICAS 5
@@ -17,6 +19,7 @@ float obterMin(int *array);
 float obterMax(int *array);
 float obterMediana(int size, int *array);
 float obterMedia(int size, int *array);
+float obterDesvioPadrao(int size, float avg, int *array);
 
 
 
@@ -60,12 +63,13 @@ int main(int argc, char const *argv[])
             resultadosCidades[j + C*i][1] = obterMax(bucketsCidades[j]);
             resultadosCidades[j + C*i][2] = obterMediana(A, bucketsCidades[j]);
             resultadosCidades[j + C*i][3] = obterMedia(A, bucketsCidades[j]);
+            resultadosCidades[j + C*i][4] = obterDesvioPadrao(A, resultadosCidades[j + C*i][3], bucketsCidades[j]);
 
             printf("min %.2f\n", resultadosCidades[j + C*i][0]);
             printf("max %.2f\n", resultadosCidades[j + C*i][1]);
             printf("mediana %.2f\n", resultadosCidades[j + C*i][2]);
             printf("media %.2f\n", resultadosCidades[j + C*i][3]);
-
+            printf("std %.2f\n", resultadosCidades[j + C*i][4]);
         }   
         printf("\n");
     }
@@ -248,7 +252,12 @@ float obterMediana(int size, int *array)
                 
             } else
             {// numero impar de elementos
-                for (int j = i+1; j < LIM_NOTAS; j++){ if (array[j]>0) {return j;} }
+                if (posicaoMediana = 0)
+                {
+                    for (int j = i+1; j < LIM_NOTAS+1; j++){ if (array[j]>0) {return j;} }                
+                }
+                return i;
+                
             }   
         }
     }
@@ -265,4 +274,14 @@ float obterMedia(int size, int *array)
         soma += array[i]*i;
     }
     return soma/(float)size;
+}
+
+float obterDesvioPadrao(int size, float avg, int *array)
+{
+    float soma = 0;
+    for (int i = 0; i < LIM_NOTAS+1; i++)
+    {
+        soma += ((float)i - avg)*((float)i - avg)*array[i];
+    }
+    return sqrt(soma/size);
 }
