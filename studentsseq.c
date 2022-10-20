@@ -4,7 +4,7 @@
 #include <math.h>
 
 
-#define LIM_NOTAS 10
+#define LIM_NOTAS 100
 #define N_METRICAS 5
 
 int*** criaMatriz(int R, int C, int A);
@@ -38,49 +38,104 @@ int main(int argc, char const *argv[])
     verificaAlocacao(resultadosCidades);
     float **resultadosRegioes = criaResultados(R);
     verificaAlocacao(resultadosRegioes);
+    float **resultadosGerais = criaResultados(1);
+    verificaAlocacao(resultadosGerais);
+
 
     int ***M = criaMatriz(R, C, A);
     verificaAlocacao(M);
     imprimeMatriz(R, C, A, M);
 
     // calculando métricas por cidades
-    int **bucketsCidades=(int**)calloc(C, sizeof(int*));
+    int **bucketsCidades=(int**)calloc(R*C, sizeof(int*));
+
+    // TODO - modularizar,
+    
     for (int i = 0; i < R; i++)
     {
         for (int j = 0; j < C; j++)
         {
-            bucketsCidades[j] = criaBucket(A, M[i][j]);
-
-            printf("bucket[%d][%d]\n", j, j+C*i);
-            for (int k = 0; k < LIM_NOTAS+1; k++)
-            {
-                printf("%d", bucketsCidades[j][k]);
-                if(k != LIM_NOTAS+1)printf(" ");
-            }printf("\n");
-            
-
-            resultadosCidades[j + C*i][0] = obterMin(bucketsCidades[j]);
-            resultadosCidades[j + C*i][1] = obterMax(bucketsCidades[j]);
-            resultadosCidades[j + C*i][2] = obterMediana(A, bucketsCidades[j]);
-            resultadosCidades[j + C*i][3] = obterMedia(A, bucketsCidades[j]);
-            resultadosCidades[j + C*i][4] = obterDesvioPadrao(A, resultadosCidades[j + C*i][3], bucketsCidades[j]);
-
-            printf("min %.2f\n", resultadosCidades[j + C*i][0]);
-            printf("max %.2f\n", resultadosCidades[j + C*i][1]);
-            printf("mediana %.2f\n", resultadosCidades[j + C*i][2]);
-            printf("media %.2f\n", resultadosCidades[j + C*i][3]);
-            printf("std %.2f\n", resultadosCidades[j + C*i][4]);
+            bucketsCidades[j+C*i] = criaBucket(A, M[i][j]);
+            resultadosCidades[j + C*i][0] = obterMin(bucketsCidades[j + C*i]);
+            resultadosCidades[j + C*i][1] = obterMax(bucketsCidades[j + C*i]);
+            resultadosCidades[j + C*i][2] = obterMediana(A, bucketsCidades[j + C*i]);
+            resultadosCidades[j + C*i][3] = obterMedia(A, bucketsCidades[j + C*i]);
+            resultadosCidades[j + C*i][4] = obterDesvioPadrao(A, resultadosCidades[j + C*i][3], bucketsCidades[j + C*i]);
         }   
-        printf("\n");
     }
 
-
-    for (int i = 0; i < C; i++) {free(bucketsCidades[i]); };
-    free(bucketsCidades);
+    // TODO Modularizar 
+    int **bucketsRegioes=(int**)calloc(R, sizeof(int*));
+    for (int i = 0; i < R; i++)
+    {
+        bucketsRegioes[i] = (int*)calloc(LIM_NOTAS+1, sizeof(int));
+        for (int j = 0; j < C; j++)
+        {
+            for (int k = 0; k < LIM_NOTAS+1; k++)
+                bucketsRegioes[i][k] += bucketsCidades[j + C*i][k];
+        }        
+        resultadosRegioes[i][0] = obterMin(bucketsRegioes[i]);
+        resultadosRegioes[i][1] = obterMax(bucketsRegioes[i]);
+        resultadosRegioes[i][2] = obterMediana(C*A, bucketsRegioes[i]);
+        resultadosRegioes[i][3] = obterMedia(C*A, bucketsRegioes[i]);
+        resultadosRegioes[i][4] = obterDesvioPadrao(C*A, resultadosRegioes[i][3], bucketsRegioes[i]);
+    }
     
+    // métricas finais
+    int **bucketGeral=(int**)calloc(1, sizeof(int*));
+    bucketGeral[0] = (int*)calloc(LIM_NOTAS+1, sizeof(int));
+    for (int i = 0; i < R; i++)
+    {
+        for (int k = 0; k < LIM_NOTAS+1; k++)
+            bucketGeral[0][k] += bucketsRegioes[i][k];
+    }        
+    resultadosGerais[0][0] = obterMin(bucketGeral[0]);
+    resultadosGerais[0][1] = obterMax(bucketGeral[0]);
+    resultadosGerais[0][2] = obterMediana(R*C*A, bucketGeral[0]);
+    resultadosGerais[0][3] = obterMedia(R*C*A, bucketGeral[0]);
+    resultadosGerais[0][4] = obterDesvioPadrao(R*C*A, resultadosGerais[0][3], bucketGeral[0]);
+
+    for (int i = 0; i < R*C; i++) {free(bucketsCidades[i]); };
+    for (int i = 0; i < R; i++) {free(bucketsRegioes[i]); };
+    free(bucketGeral[0]);
+
+    free(bucketsCidades);
+    free(bucketsRegioes);
+    free(bucketGeral);
+
+    printf("\n");
+    for (int i = 0; i < R; i++)
+    {
+        for (int j = 0; j < C; j++)
+            printf(
+                "Reg %d - Cid %d: menor: %.0f, maior: %.0f, mediana %.2f, média: %.2f e DP: %.2f\n",
+                i, j, resultadosCidades[j + C*i][0], resultadosCidades[j + C*i][1], 
+                resultadosCidades[j + C*i][2], resultadosCidades[j + C*i][3], 
+                resultadosCidades[j + C*i][4]
+            );        
+    }
+
+    printf("\n");
+    for (int i = 0; i < R; i++)
+        printf(
+            "Reg %d: menor: %.0f, maior: %.0f, mediana %.2f, média: %.2f e DP: %.2f\n",
+            i, resultadosRegioes[i][0], resultadosRegioes[i][1], 
+            resultadosRegioes[i][2], resultadosRegioes[i][3], 
+            resultadosRegioes[i][4]
+        );
+
+    printf("\n");
+    printf(
+        "Brasil: menor: %.0f, maior: %.0f, mediana %.2f, média: %.2f e DP: %.2f",
+        resultadosGerais[0][0], resultadosGerais[0][1], 
+        resultadosGerais[0][2], resultadosGerais[0][3], 
+        resultadosCidades[0][4]
+    );
+    printf("\n");
 
     limpaResultados(R*C, (void**)resultadosCidades);
     limpaResultados(R, (void**)resultadosRegioes);
+    limpaResultados(1, (void**)resultadosGerais);
     limpaMatriz(R, C, A, (void***)M);
 
 
@@ -241,18 +296,21 @@ float obterMediana(int size, int *array)
         if (posicaoMediana <= 0)
         {// caso numero par de elementos
             if (size %2 ==0)
-            {
-                int x = i;
-                int y=0;
-                for (int j = i+1; j < LIM_NOTAS; j++)
+            {   
+                if(posicaoMediana == 0)
                 {
-                    if (array[j]>0) { y = j; j = LIM_NOTAS; }
+                    int x = i;
+                    int y=0;
+                    for (int j = i+1; j < LIM_NOTAS; j++)
+                    {
+                        if (array[j]>0) { y = j; j = LIM_NOTAS; }
+                    }
+                    return (x+y)/(float)2;
                 }
-                return (x+y)/(float)2;
-                
+                return i;
             } else
             {// numero impar de elementos
-                if (posicaoMediana = 0)
+                if (posicaoMediana == 0)
                 {
                     for (int j = i+1; j < LIM_NOTAS+1; j++){ if (array[j]>0) {return j;} }                
                 }
@@ -263,7 +321,6 @@ float obterMediana(int size, int *array)
     }
     return 0;
 }
-
 
 
 float obterMedia(int size, int *array)
