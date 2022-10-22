@@ -119,7 +119,6 @@ void limpaMatriz(int R, int C, int A, void ***matriz)
     free(matriz); matriz=NULL;
 }
 
-
 void imprimeMatriz(int R, int C, int A, int ***matriz)
 {
     for (int i = 0; i < R; i++)
@@ -138,7 +137,6 @@ void imprimeMatriz(int R, int C, int A, int ***matriz)
         printf("\n");
     }
 }
-
 
 int* criaBucket(int size, int *array) 
 {
@@ -254,7 +252,6 @@ void obterResultadosCidades(int R, int C, int A, int ***M, int **bucketsCidades,
         }   
     }
 }
-
 void calculaMetricas(int index, int n_elem, float **resultados, int **buckets)
 {
     /*
