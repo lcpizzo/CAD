@@ -47,8 +47,11 @@ int main(int argc, char const *argv[])
     int ***M = criaMatriz(R, C, A);
     imprimeMatriz(R, C, A, M);
 
+    clock_t start = clock();
     int **bucketsCidades=(int**)calloc(R*C, sizeof(int*));
     assert(bucketsCidades);
+
+    
     obterResultadosCidades(R, C, A, M, bucketsCidades, resultadosCidades);
 
     int **bucketsRegioes=(int**)calloc(R, sizeof(int*));
@@ -64,13 +67,16 @@ int main(int argc, char const *argv[])
     }        
     calculaMetricas(0, R*C*A, resultadosGerais, bucketGeral);
 
+    free(bucketGeral[0]);
+
     for (int i = 0; i < R*C; i++) {free(bucketsCidades[i]); };
     for (int i = 0; i < R; i++) {free(bucketsRegioes[i]); };
-    free(bucketGeral[0]);
+    
 
     free(bucketsCidades);
     free(bucketsRegioes);
     free(bucketGeral);
+    clock_t end = clock();
 
     imprimeResultados(R, C, A, resultadosCidades, resultadosRegioes, resultadosGerais);
 
@@ -78,6 +84,9 @@ int main(int argc, char const *argv[])
     limpaResultados(R, (void**)resultadosRegioes);
     limpaResultados(1, (void**)resultadosGerais);
     limpaMatriz(R, C, A, (void***)M);
+
+    float seconds = (float)(end - start) / CLOCKS_PER_SEC;
+    printf("Tempo em Segundos: %lf\n", seconds);
 
     return 0;
 }
