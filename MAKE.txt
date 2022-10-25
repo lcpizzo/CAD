@@ -1,2 +1,0 @@
-all:
-    gcc studentspar.c -o studentspar -fopenmp
