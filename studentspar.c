@@ -1,21 +1,7 @@
-#include "studentsseq.h"
+#include "studentsFunc.h"
 #include <stdio.h> 
 #include <stdlib.h>
 #include <omp.h>
-
-#define LIM_NOTAS 100
-#define N_METRICAS 5
-
-int* criaBucketPar(int size, int *array) 
-{
-    int *bucket = (int*)calloc(LIM_NOTAS+1, sizeof(int));
-    // não conseguiu alocar memória
-    assert(bucket);    
-    // divide size por numero de threads e cada thread 
-    for (int i = 0; i < size; i++)
-        bucket[array[i]]++;    
-    return bucket;
-}
 
 int main(){
     int R, C, A, seed;
@@ -40,7 +26,7 @@ int main(){
     clock_t start = clock();
     int **bucketsCidades=(int**)calloc(R*C, sizeof(int*));
     assert(bucketsCidades);
-    obterResultadosCidades(R, C, A, M, bucketsCidades, resultadosCidades);
+    obterResultadosCidadesPar(R, C, A, M, bucketsCidades, resultadosCidades);
 
     int **bucketsRegioes=(int**)calloc(R, sizeof(int*));
     assert(bucketsRegioes);
@@ -54,18 +40,18 @@ int main(){
     omp_set_num_threads(n_threads);
     #pragma omp parallel
     {
+        #pragma omp for// reduction(+:bucketsCidades[:R][:C])
         for (int i = 0; i < R; i++)
         {
-            #pragma omp for reduction(+:bucketsCidades[i][:C])
             for(int j = 0; j < C; j++){
                 int bucketTemp[LIM_NOTAS+1];
-                #pragma omp for
+                
+                //#pragma omp for
                 for (int k = 0; k < A; k++)
                     bucketTemp[M[i][j][k]]++;    
                 
-                //#pragma omp for reduction(+:bucketsCidades[i][:C])
-                for (int w=0; w<C; w++){
-                    bucketsCidades[i][w] += bucketTemp[i];
+                for (int k=0; k<C; k++){
+                    bucketsCidades[i][k] += bucketTemp[k];
                 }
             
             }
@@ -82,9 +68,9 @@ int main(){
 
     #pragma omp parallel
     {
+        #pragma omp for //reduction (+: bucketsRegioes[i][:C])
         for (int i=0; i<R; i++){
             // reduzir os buckets cidade pros buckets regiao
-            #pragma omp for reduction (+: bucketsRegioes[i][:C])
             for (int j=0; j<C; j++){
                 bucketsRegioes[i][j] += bucketsCidades[i][j];
             }
@@ -101,9 +87,9 @@ int main(){
 
     #pragma omp parallel
     {
+        #pragma omp for //reduction (+: bucketGeral[i][:C])
         for (int i=0; i<R; i++){
             // reduzir os buckets regiao pro bucket geral
-            #pragma omp for reduction (+: bucketGeral[i][:C])
             for (int j=0; j<C; j++){
                 bucketGeral[i][j] += bucketsRegioes[i][j];
             }
