@@ -35,7 +35,6 @@ int main()
         #pragma for
         for (int j = 0; j < C; j++)
         {
-            printf("i: %d\tj: %d\n", i, j);
             bucketsCidades[j + (C * i)] = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
             assert(bucketsCidades[j + (C * i)]);
         }
@@ -63,64 +62,53 @@ int main()
         {
             int *bucketTemp = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
             
-            #pragma omp for simd
+            #pragma for critical
             for (int k = 0; k < A; k++){
                 bucketTemp[M[i][j][k]]++;
             }
-            #pragma for
             //#pragma omp for reduction(+: bucketsCidades[0][:LIM_NOTAS + 1])
             for (int k = 0; k < LIM_NOTAS + 1; k++)
             {
                 bucketsCidades[(i * C) + j][k] += bucketTemp[k];
             }
-            free(bucketTemp);
-        }
-    }
 
-    #pragma omp parallel for
-    for(int i = 0; i < R; i++){
-        for (int j = 0; j < C; j++){
             resultadosCidades[j + (i * C)][0] = obterMin(bucketsCidades[j + (i * C)]);
             resultadosCidades[j + (i * C)][1] = obterMax(bucketsCidades[j + (i * C)]);
             resultadosCidades[j + (i * C)][2] = obterMediana(A, bucketsCidades[j + (i * C)]);
             resultadosCidades[j + (i * C)][3] = obterMedia(A, bucketsCidades[j + (i * C)]);
             resultadosCidades[j + (i * C)][4] = obterDesvioPadrao(A, resultadosCidades[j + (i * C)][3], bucketsCidades[j + (i * C)]);
+
+            free(bucketTemp);
         }
     }
 
-    #pragma omp parallel
+    #pragma omp parallel for
+    for (int i = 0; i < R; i++)
     {
-        for (int i = 0; i < R; i++)
+        // reduzir os buckets cidade pros buckets regiao
+        #pragma for
+        for (int j = 0; j < C; j++)
         {
-            #pragma for
-            // reduzir os buckets cidade pros buckets regiao
-            for (int j = 0; j < C; j++)
+            //#pragma omp for reduction (+:bucketsRegioes[i][:LIM_NOTAS + 1])
+            for (int k = 0; k < LIM_NOTAS + 1; k++)
             {
-                //#pragma omp for reduction (+:bucketsRegioes[i][:LIM_NOTAS + 1])
-                for (int k = 0; k < LIM_NOTAS + 1; k++)
-                {
-                    bucketsRegioes[i][k] += bucketsCidades[(i * C) + j][k];
-                }
+                bucketsRegioes[i][k] += bucketsCidades[(i * C) + j][k];
             }
-        }
-    }
-    
-    #pragma omp parallel
-    // calcular os resultados da regiao
-    for(int i = 0; i < R; i++){
+        }   
+        
+        // calcular os resultados da regiao
         resultadosRegioes[i][0] = obterMin(bucketsRegioes[i]);
         resultadosRegioes[i][1] = obterMax(bucketsRegioes[i]);
         resultadosRegioes[i][2] = obterMediana(A * C, bucketsRegioes[i]);
         resultadosRegioes[i][3] = obterMedia(A * C, bucketsRegioes[i]);
         resultadosRegioes[i][4] = obterDesvioPadrao(A * C, resultadosRegioes[i][3], bucketsRegioes[i]);
     }
-
+    
     //#pragma omp parallel
     //{
         #pragma omp for reduction (+: bucketGeral[:LIM_NOTAS + 1])
         for (int i = 0; i < R; i++)
         {
-            #pragma for
         // reduzir os buckets regiao pro bucket geral
             for (int j = 0; j < LIM_NOTAS + 1; j++)
             {

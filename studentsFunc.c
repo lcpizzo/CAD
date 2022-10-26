@@ -165,7 +165,7 @@ float obterDesvioPadrao(int size, float avg, int *array)
     for (int i = 0; i < LIM_NOTAS+1; i++)
         soma += ((float)i - avg)*((float)i - avg)*array[i];
     
-    return sqrt(soma/size);
+    return sqrt(soma/size - 1);
 }
 
 void obterResultadosCidades(int R, int C, int A, int ***M, int **bucketsCidades, float **resultadosCidades)

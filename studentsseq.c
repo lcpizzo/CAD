@@ -58,7 +58,7 @@ int main(int argc, char const *argv[])
     free(bucketGeral);
     clock_t end = clock();
 
-    imprimeResultados(R, C, A, resultadosCidades, resultadosRegioes, resultadosGerais);
+    imprimeResultados(R, C, A, resultadosCidades, resultadosRegioes, resultadosGerais[0]);
 
     limpaResultados(R*C, (void**)resultadosCidades);
     limpaResultados(R, (void**)resultadosRegioes);
