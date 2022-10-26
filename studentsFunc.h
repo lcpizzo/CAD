@@ -26,7 +26,7 @@ float obterDesvioPadrao(int size, float avg, int *array);
 void obterResultadosCidades(int R, int C, int A, int ***M, int **bucketsCidades, float **resultadosCidades);
 void calculaMetricas(int index, int n_elem, float **resultados, int **buckets);
 void obterResultadosRegioes(int R, int C, int A, float **resultadosRegioes, int ** bucketsCidades, int **bucketsRegioes);
-void imprimeResultados(int R, int C, int A, float **resultadosCidades, float **resultadosRegioes, float **resultadosGerais);
+void imprimeResultados(int R, int C, int A, float **resultadosCidades, float **resultadosRegioes, float *resultadosGerais);
 
 int* criaBucketPar(int size, int *array); 
 void obterResultadosCidadesPar(int R, int C, int A, int ***M, int **bucketsCidades, float **resultadosCidades);

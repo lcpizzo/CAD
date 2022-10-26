@@ -154,6 +154,7 @@ float obterMedia(int size, int *array)
     int soma = 0;
     for (int i = 0; i < LIM_NOTAS+1; i++)
         soma += array[i]*i;
+    // printf("media\n\ntam: %d soma:%d\n", size, soma);
 
     return soma/(float)size;
 }
@@ -206,7 +207,7 @@ void obterResultadosRegioes(int R, int C, int A, float **resultadosRegioes, int 
     }
 }
 
-void imprimeResultados(int R, int C, int A, float **resultadosCidades, float **resultadosRegioes, float **resultadosGerais) 
+void imprimeResultados(int R, int C, int A, float **resultadosCidades, float **resultadosRegioes, float *resultadosGerais) 
 {
     printf("\n");
     for (int i = 0; i < R; i++)
@@ -231,10 +232,10 @@ void imprimeResultados(int R, int C, int A, float **resultadosCidades, float **r
 
     printf("\n");
     printf(
-        "Brasil: menor: %.0f, maior: %.0f, mediana %.2f, média: %.2f e DP: %.2f",
-        resultadosGerais[0][0], resultadosGerais[0][1], 
-        resultadosGerais[0][2], resultadosGerais[0][3], 
-        resultadosCidades[0][4]
+        "Brasil: menor: %.0f, maior: %.0f, mediana %.2f, média: %.2f e DP: %.2lf",
+        resultadosGerais[0], resultadosGerais[1], 
+        resultadosGerais[2], resultadosGerais[3], 
+        resultadosGerais[4]
     );
     printf("\n");
 }

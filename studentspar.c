@@ -1,9 +1,10 @@
 #include "studentsFunc.h"
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
 
-int main(){
+int main()
+{
     int R, C, A, seed;
 
     scanf("%d", &R);
@@ -11,104 +12,137 @@ int main(){
     scanf("%d", &A);
     scanf("%d", &seed);
 
+    //printf("Rodando\n");
     srand(seed);
 
-    float **resultadosCidades = criaResultados(R*C);
+    float **resultadosCidades = criaResultados(R * C);
     assert(resultadosCidades);
     float **resultadosRegioes = criaResultados(R);
     assert(resultadosRegioes);
-    float **resultadosGerais = criaResultados(1);
+    float *resultadosGerais = (float*)calloc(N_METRICAS, sizeof(float));
     assert(resultadosGerais);
 
     int ***M = criaMatriz(R, C, A);
-    imprimeMatriz(R, C, A, M);
+    //imprimeMatriz(R, C, A, M);
 
     clock_t start = clock();
-    int **bucketsCidades=(int**)calloc(R*C, sizeof(int*));
+    int **bucketsCidades = (int **)calloc(R * C, sizeof(int *));
     assert(bucketsCidades);
-    obterResultadosCidadesPar(R, C, A, M, bucketsCidades, resultadosCidades);
+    
+    #pragma omp parallel for
+    for (int i = 0; i < R; i++)
+    {
+        #pragma for
+        for (int j = 0; j < C; j++)
+        {
+            printf("i: %d\tj: %d\n", i, j);
+            bucketsCidades[j + (C * i)] = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
+            assert(bucketsCidades[j + (C * i)]);
+        }
+    }
 
-    int **bucketsRegioes=(int**)calloc(R, sizeof(int*));
+    int **bucketsRegioes = (int **)calloc(R, sizeof(int *));
     assert(bucketsRegioes);
-    obterResultadosRegioes(R, C, A, resultadosRegioes, bucketsCidades, bucketsRegioes);
 
-    int **bucketGeral=(int**)calloc(1, sizeof(int*));
-    bucketGeral[0] = (int*)calloc(LIM_NOTAS+1, sizeof(int));
+    #pragma omp parallel for
+    for (int i = 0; i < R; i++)
+    {
+        bucketsRegioes[i] = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
+        assert(bucketsRegioes[i]);
+    }
 
-    // Lógica paralela aqui
+    int *bucketGeral = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
+
     int n_threads = 8;
     omp_set_num_threads(n_threads);
+    #pragma omp parallel for
+    for (int i = 0; i < R; i++)
+    {
+        #pragma for
+        for (int j = 0; j < C; j++)
+        {
+            int *bucketTemp = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
+            
+            #pragma omp for simd
+            for (int k = 0; k < A; k++){
+                bucketTemp[M[i][j][k]]++;
+            }
+            #pragma for
+            //#pragma omp for reduction(+: bucketsCidades[0][:LIM_NOTAS + 1])
+            for (int k = 0; k < LIM_NOTAS + 1; k++)
+            {
+                bucketsCidades[(i * C) + j][k] += bucketTemp[k];
+            }
+            free(bucketTemp);
+        }
+    }
+
+    #pragma omp parallel for
+    for(int i = 0; i < R; i++){
+        for (int j = 0; j < C; j++){
+            resultadosCidades[j + (i * C)][0] = obterMin(bucketsCidades[j + (i * C)]);
+            resultadosCidades[j + (i * C)][1] = obterMax(bucketsCidades[j + (i * C)]);
+            resultadosCidades[j + (i * C)][2] = obterMediana(A, bucketsCidades[j + (i * C)]);
+            resultadosCidades[j + (i * C)][3] = obterMedia(A, bucketsCidades[j + (i * C)]);
+            resultadosCidades[j + (i * C)][4] = obterDesvioPadrao(A, resultadosCidades[j + (i * C)][3], bucketsCidades[j + (i * C)]);
+        }
+    }
+
     #pragma omp parallel
     {
-        #pragma omp for// reduction(+:bucketsCidades[:R][:C])
         for (int i = 0; i < R; i++)
         {
-            for(int j = 0; j < C; j++){
-                int bucketTemp[LIM_NOTAS+1];
-                
-                //#pragma omp for
-                for (int k = 0; k < A; k++)
-                    bucketTemp[M[i][j][k]]++;    
-                
-                for (int k=0; k<C; k++){
-                    bucketsCidades[i][k] += bucketTemp[k];
-                }
-            
-            }
-
-            for(int j=0; j<C;j++){                                    
-                resultadosCidades[j + i*C][0] = obterMin(bucketsCidades[j + i*C]);
-                resultadosCidades[j + i*C][1] = obterMax(bucketsCidades[j + i*C]);
-                resultadosCidades[j + i*C][2] = obterMediana(A, bucketsCidades[j + i*C]);
-                resultadosCidades[j + i*C][3] = obterMedia(A, bucketsCidades[j + i*C]);
-                resultadosCidades[j + i*C][4] = obterDesvioPadrao(A, resultadosCidades[j + i*C][3], bucketsCidades[j + i*C]);
-            }
-        }        
-    }
-
-    #pragma omp parallel
-    {
-        #pragma omp for //reduction (+: bucketsRegioes[i][:C])
-        for (int i=0; i<R; i++){
+            #pragma for
             // reduzir os buckets cidade pros buckets regiao
-            for (int j=0; j<C; j++){
-                bucketsRegioes[i][j] += bucketsCidades[i][j];
-            }
-            // calcular os resultados da regiao
-            for(int j=0; j<C;j++){                                    
-                resultadosRegioes[j + i*C][0] = obterMin(bucketsCidades[j + i*C]);
-                resultadosRegioes[j + i*C][1] = obterMax(bucketsCidades[j + i*C]);
-                resultadosRegioes[j + i*C][2] = obterMediana(A, bucketsCidades[j + i*C]);
-                resultadosRegioes[j + i*C][3] = obterMedia(A, bucketsCidades[j + i*C]);
-                resultadosRegioes[j + i*C][4] = obterDesvioPadrao(A, resultadosCidades[j + i*C][3], bucketsCidades[j + i*C]);
+            for (int j = 0; j < C; j++)
+            {
+                //#pragma omp for reduction (+:bucketsRegioes[i][:LIM_NOTAS + 1])
+                for (int k = 0; k < LIM_NOTAS + 1; k++)
+                {
+                    bucketsRegioes[i][k] += bucketsCidades[(i * C) + j][k];
+                }
             }
         }
     }
-
-    #pragma omp parallel
-    {
-        #pragma omp for //reduction (+: bucketGeral[i][:C])
-        for (int i=0; i<R; i++){
-            // reduzir os buckets regiao pro bucket geral
-            for (int j=0; j<C; j++){
-                bucketGeral[i][j] += bucketsRegioes[i][j];
-            }
-            // calcular os resultados da regiao
-            for(int j=0; j<C;j++){                                    
-                resultadosGerais[j + i*C][0] = obterMin(bucketGeral[j + i*C]);
-                resultadosGerais[j + i*C][1] = obterMax(bucketGeral[j + i*C]);
-                resultadosGerais[j + i*C][2] = obterMediana(A, bucketGeral[j + i*C]);
-                resultadosGerais[j + i*C][3] = obterMedia(A, bucketGeral[j + i*C]);
-                resultadosGerais[j + i*C][4] = obterDesvioPadrao(A, resultadosRegioes[j + i*C][3], bucketGeral[j + i*C]);
-            }
-        }
-    }
-
-    clock_t end = clock();
     
-    for (int i = 0; i < R*C; i++) {free(bucketsCidades[i]); };
-    for (int i = 0; i < R; i++) {free(bucketsRegioes[i]); };
-    free(bucketGeral[0]);
+    #pragma omp parallel
+    // calcular os resultados da regiao
+    for(int i = 0; i < R; i++){
+        resultadosRegioes[i][0] = obterMin(bucketsRegioes[i]);
+        resultadosRegioes[i][1] = obterMax(bucketsRegioes[i]);
+        resultadosRegioes[i][2] = obterMediana(A * C, bucketsRegioes[i]);
+        resultadosRegioes[i][3] = obterMedia(A * C, bucketsRegioes[i]);
+        resultadosRegioes[i][4] = obterDesvioPadrao(A * C, resultadosRegioes[i][3], bucketsRegioes[i]);
+    }
+
+    //#pragma omp parallel
+    //{
+        #pragma omp for reduction (+: bucketGeral[:LIM_NOTAS + 1])
+        for (int i = 0; i < R; i++)
+        {
+            #pragma for
+        // reduzir os buckets regiao pro bucket geral
+            for (int j = 0; j < LIM_NOTAS + 1; j++)
+            {
+                bucketGeral[j] += bucketsRegioes[i][j];
+            }
+        }
+    // }
+
+    // calcular os resultados da regiao      
+    #pragma omp parallel
+    { 
+        resultadosGerais[0] = obterMin(bucketGeral);
+        resultadosGerais[1] = obterMax(bucketGeral);
+        resultadosGerais[2] = obterMediana(R*C*A, bucketGeral);
+        resultadosGerais[3] = obterMedia(R*C*A, bucketGeral);
+        resultadosGerais[4] = obterDesvioPadrao(A * R * C, resultadosGerais[3], bucketGeral);
+    }
+    
+    clock_t end = clock();
+
+    for (int i = 0; i < R * C; i++) free(bucketsCidades[i]);
+    for (int i = 0; i < R; i++) free(bucketsRegioes[i]);
 
     free(bucketsCidades);
     free(bucketsRegioes);
@@ -118,7 +152,8 @@ int main(){
 
     limpaResultados(R*C, (void**)resultadosCidades);
     limpaResultados(R, (void**)resultadosRegioes);
-    limpaResultados(1, (void**)resultadosGerais);
+    //limpaResultados(N_METRICAS, (void*)resultadosGerais);
+    free(resultadosGerais);
     limpaMatriz(R, C, A, (void***)M);
     
     float seconds = (float)(end - start) / CLOCKS_PER_SEC;
