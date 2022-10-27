@@ -25,7 +25,7 @@ int main(int argc, char const *argv[])
     assert(resultadosGerais);
 
     int ***M = criaMatriz(R, C, A);
-    imprimeMatriz(R, C, A, M);
+    // imprimeMatriz(R, C, A, M);
 
     clock_t start = clock();
     int **bucketsCidades=(int**)calloc(R*C, sizeof(int*));
