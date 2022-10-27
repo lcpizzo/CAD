@@ -25,7 +25,6 @@ int main()
     int ***M = criaMatriz(R, C, A);
     //imprimeMatriz(R, C, A, M);
 
-    clock_t start = clock();
     int **bucketsCidades = (int **)calloc(R * C, sizeof(int *));
     assert(bucketsCidades);
     
@@ -43,6 +42,7 @@ int main()
     int **bucketsRegioes = (int **)calloc(R, sizeof(int *));
     assert(bucketsRegioes);
 
+    clock_t start = clock();
     #pragma omp parallel for
     for (int i = 0; i < R; i++)
     {
@@ -62,11 +62,11 @@ int main()
         {
             int *bucketTemp = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
             
-            #pragma for critical
+            //#pragma for simd private(bucketTemp)
             for (int k = 0; k < A; k++){
                 bucketTemp[M[i][j][k]]++;
             }
-            //#pragma omp for reduction(+: bucketsCidades[0][:LIM_NOTAS + 1])
+            #pragma for reduction(+: bucketsCidades[(i * C) + j][:LIM_NOTAS + 1])
             for (int k = 0; k < LIM_NOTAS + 1; k++)
             {
                 bucketsCidades[(i * C) + j][k] += bucketTemp[k];
