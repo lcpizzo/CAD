@@ -32,7 +32,7 @@ int*** criaMatriz(int R, int C, int A)
     return matriz;
 }
 
-void limpaMatriz(int R, int C, int A, void ***matriz) 
+void limpaMatriz(int R, int C, void ***matriz) 
 {
     for (int i = 0; i < R; i++)
     {

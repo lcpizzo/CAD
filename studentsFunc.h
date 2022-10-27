@@ -11,7 +11,7 @@
 #define N_METRICAS 5
 
 int*** criaMatriz(int R, int C, int A);
-void limpaMatriz(int R, int C, int A, void ***matriz);
+void limpaMatriz(int R, int C, void ***matriz);
 void imprimeMatriz(int R, int C, int A, int ***matriz);
 int* criaBucket(int size, int *array);
 void limpaArray(void *array);

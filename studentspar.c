@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <omp.h>
 
+#define T 8
+
 int main()
 {
     int R, C, A, seed;
@@ -12,7 +14,6 @@ int main()
     scanf("%d", &A);
     scanf("%d", &seed);
 
-    //printf("Rodando\n");
     srand(seed);
 
     float **resultadosCidades = criaResultados(R * C);
@@ -28,32 +29,23 @@ int main()
     int **bucketsCidades = (int **)calloc(R * C, sizeof(int *));
     assert(bucketsCidades);
     
-    #pragma omp parallel for
-    for (int i = 0; i < R; i++)
-    {
-        #pragma for
-        for (int j = 0; j < C; j++)
-        {
-            bucketsCidades[j + (C * i)] = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
-            assert(bucketsCidades[j + (C * i)]);
-        }
+    for (int i = 0; i < R*C; i++){
+        bucketsCidades[i] = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
+        assert(bucketsCidades[i]);
     }
 
     int **bucketsRegioes = (int **)calloc(R, sizeof(int *));
     assert(bucketsRegioes);
 
-    clock_t start = clock();
-    #pragma omp parallel for
-    for (int i = 0; i < R; i++)
-    {
+    for (int i = 0; i < R; i++){
         bucketsRegioes[i] = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
         assert(bucketsRegioes[i]);
     }
 
     int *bucketGeral = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
 
-    int n_threads = 8;
-    omp_set_num_threads(n_threads);
+    clock_t start = clock();
+    omp_set_num_threads(T);
     #pragma omp parallel for
     for (int i = 0; i < R; i++)
     {
@@ -89,7 +81,7 @@ int main()
         #pragma for
         for (int j = 0; j < C; j++)
         {
-            //#pragma omp for reduction (+:bucketsRegioes[i][:LIM_NOTAS + 1])
+            #pragma for reduction (+:bucketsRegioes[i][:LIM_NOTAS + 1])
             for (int k = 0; k < LIM_NOTAS + 1; k++)
             {
                 bucketsRegioes[i][k] += bucketsCidades[(i * C) + j][k];
@@ -142,7 +134,7 @@ int main()
     limpaResultados(R, (void**)resultadosRegioes);
     //limpaResultados(N_METRICAS, (void*)resultadosGerais);
     free(resultadosGerais);
-    limpaMatriz(R, C, A, (void***)M);
+    limpaMatriz(R, C, (void***)M);
     
     float seconds = (float)(end - start) / CLOCKS_PER_SEC;
     printf("Tempo em Segundos: %lf\n", seconds);
