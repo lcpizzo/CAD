@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <omp.h>
 
-#define NUM_THREADS 8
+#define NUM_THREADS 6
 
 int main()
 {
@@ -53,7 +53,7 @@ int main()
     // #pragma omp parallel for
     // clock_t t1 = clock();
 
-    #pragma omp parallel for
+    // #pragma omp parallel for
     for (int i = 0; i < R; i++)
     {
         // #pragma omp for
@@ -63,8 +63,10 @@ int main()
             {
                 int *bucketTemp = (int *)calloc(LIM_NOTAS + 1, sizeof(int));
                 // clock_t tTemp1 = clock();
-                #pragma omp simd 
-                for (int k = omp_get_thread_num(); k < A; k+= NUM_THREADS){
+                int k =0;
+                #pragma omp for simd
+                for (k = 0; k < A; k++){
+                    // printf("%d\n", omp_get_thread_num());
                     bucketTemp[M[i][j][k]]++;
                 }
                 // clock_t tTemp2 = clock();
@@ -136,9 +138,9 @@ int main()
 
     limpaResultados(R*C, (void**)resultadosCidades);
     limpaResultados(R, (void**)resultadosRegioes);
-    //limpaResultados(N_METRICAS, (void*)resultadosGerais);
+
     free(resultadosGerais);
-    limpaMatriz(R, C, (void***)M);
+    limpaMatriz(R, C, A, (void***)M);
     
     float seconds = (float)(end - start) / CLOCKS_PER_SEC;
     printf("Tempo em Segundos: %lf\n", seconds);
